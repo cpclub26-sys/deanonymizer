@@ -1,9 +1,9 @@
 # deanonymizer
 
 deanonymizer is a command-line system for defensive OSINT exposure
-measurement. It estimates re-identification risk from public Reddit, Hacker
-News, and X (Twitter) corpora by aggregating weak signals, scoring identity
-hypotheses, and emitting evidence-linked remediation guidance.
+measurement. It estimates re-identification risk from public Reddit and Hacker
+News corpora by aggregating weak signals, scoring identity hypotheses, and
+emitting evidence-linked remediation guidance.
 
 ## Research basis
 
@@ -37,12 +37,6 @@ containing:
 1. Acquisition
    - Reddit artifacts from [Arctic Shift API](https://arctic-shift.photon-reddit.com)
    - Hacker News artifacts from [HN Algolia Search API](https://hn.algolia.com/api)
-   - X (Twitter) artifacts from the public syndication timeline widget
-     (`syndication.twitter.com/srv/timeline-profile/screen-name/<handle>`),
-     the same backend used by Twitter's embeddable profile widget. No API key
-     is required; reach is bounded to the most recent tweets the widget
-     renders (typically ~20–100). Private, protected, or suspended accounts
-     return an empty timeline.
 2. Canonicalization
    - Heterogeneous source records mapped into a unified item schema
    - Temporal and textual normalization for bounded-context inference
@@ -119,12 +113,6 @@ npm run audit -- my_reddit_handle --hn my_hn_handle
 # Hacker News only
 npm run audit -- --hn my_hn_handle
 
-# X (Twitter) only
-npm run audit -- --x my_x_handle
-
-# Reddit + X + Hacker News
-npm run audit -- my_reddit_handle --x my_x_handle --hn my_hn_handle
-
 # JSON output
 npm run audit -- my_reddit_handle --json -o report.json
 
@@ -147,7 +135,6 @@ npm run audit -- my_reddit_handle --provider openai --model gpt-4o-mini
 |------|---------|-------------|
 | [reddit-username] / --reddit | none | Reddit user to audit (accepts u/name) |
 | --hn <username> | none | Hacker News user to audit |
-| --x <username> | none | X (Twitter) user to audit (accepts @name) |
 | -n, --max <n> | 300 | Maximum items fetched per platform |
 | --max-chars <n> | 120000 | Maximum analysis transcript budget |
 | --concurrency <n> | all (≤8) | Number of chunk workers processed in parallel |
@@ -178,6 +165,3 @@ npm run build
 - Recall is upper-bounded by source completeness and truncation constraints
 - Stylometric separability is population- and domain-dependent
 - Confidence calibration depends on evidence density and artifact quality
-- The X (Twitter) source uses an undocumented public syndication endpoint
-  and is bounded to ~20–100 recent items per account; the endpoint may
-  change without notice, and protected/suspended accounts cannot be audited
