@@ -5,6 +5,7 @@ import { writeFile } from "node:fs/promises";
 import { CONSENT_BANNER, requireConsent } from "./consent.js";
 import { fetchReddit } from "./sources/reddit.js";
 import { fetchHN } from "./sources/hn.js";
+import { fetchX } from "./sources/x.js";
 import { analyze } from "./analyze.js";
 import { createLLMClient } from "./llm/index.js";
 import { renderJson, renderText } from "./report.js";
@@ -15,7 +16,7 @@ const program = new Command();
 program
   .name("audit")
   .description(
-    "deanonymizer — consent-based privacy exposure auditor. Pull your own Reddit / Hacker News\n" +
+    "deanonymizer — consent-based privacy exposure auditor. Pull your own Reddit / Hacker News / X\n" +
       "history and report what an attacker could infer, so you can scrub it.\n" +
       "Defensive mirror of the deanonymization attack in arXiv:2602.16800.",
   )
@@ -27,6 +28,10 @@ program
     "Reddit username to audit (also accepts u/name)",
   )
   .option("--hn <username>", "Also audit this Hacker News (YC) username")
+  .option(
+    "--x <username>",
+    "Also audit this X (Twitter) username (accepts @name)",
+  )
   .option(
     "--reddit <username>",
     "Reddit username (alternative to positional arg)",
@@ -66,14 +71,19 @@ program
   .action(async (positional, opts) => {
     const redditUser = opts.reddit ?? positional;
     const hnUser = opts.hn;
+    const xUser: string | undefined = opts.x;
 
-    if (!redditUser && !hnUser) {
+    if (!redditUser && !hnUser && !xUser) {
       console.error(
-        pc.red("Provide a Reddit username and/or --hn <username>.\n") +
+        pc.red(
+          "Provide a Reddit username and/or --hn <username> and/or --x <username>.\n",
+        ) +
           "Examples:\n" +
           "  audit my_reddit_handle\n" +
           "  audit my_reddit_handle --hn my_hn_handle\n" +
-          "  audit --hn my_hn_handle",
+          "  audit --hn my_hn_handle\n" +
+          "  audit --x my_x_handle\n" +
+          "  audit my_reddit_handle --x my_x_handle --hn my_hn_handle",
       );
       process.exit(1);
     }
@@ -83,6 +93,7 @@ program
     const subjectLabel = [
       redditUser && `reddit:${redditUser}`,
       hnUser && `hn:${hnUser}`,
+      xUser && `x:${xUser}`,
     ]
       .filter(Boolean)
       .join(" + ");
@@ -120,6 +131,13 @@ program
     if (hnUser) {
       process.stderr.write(pc.dim(`Fetching HN history for ${hnUser}… `));
       const p = await fetchHN(hnUser, max);
+      process.stderr.write(pc.dim(`${p.items.length} items\n`));
+      if (p.items.length) profiles.push(p);
+    }
+
+    if (xUser) {
+      process.stderr.write(pc.dim(`Fetching X history for ${xUser}… `));
+      const p = await fetchX(xUser, max);
       process.stderr.write(pc.dim(`${p.items.length} items\n`));
       if (p.items.length) profiles.push(p);
     }
